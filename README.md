@@ -5,7 +5,7 @@ and the explanation of the steps in the diagrams.
 The diagrams and the explanation of the steps were written with a bit of
 guessing of how it works.
 
-# podman-systemd-docs
+# podman-systemd-run-docs
 
 On a Linux computer the command `systemd-run` can be used to run Podman
 as another user.
