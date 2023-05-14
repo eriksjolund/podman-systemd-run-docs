@@ -201,8 +201,7 @@ Note, in the example the option `--user 65534:65534` was added to highlight
 the fact that the container user does not need to be mapped
 to the regular user of the host (i.e. the user _test_).
 
-#### Example: systemd system manager opens the file _/root/secretfile_
-in read-only mode and a container running in a container reads the file descriptor
+#### Example: systemd system manager opens the file _/root/secretfile_ in read-only mode and a container running in a container reads the file descriptor
 
 Run the commands
 
