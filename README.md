@@ -93,39 +93,45 @@ The text `hello` is written to stdout.
 graph TB
 
     a1[systemd-run] -.->|1. dbus| a2[systemd]
-    a2 -->|"2. (if missing) fork/exec"| a3["systemd --user<br>(user@1000.service)"]
-    a2 -.->|3. dbus| a3
-    a3 -->|4. fork/exec| a4[podman]
-    a4 -->|5. fork/exec| a5[conmon]
-    a5 -->|6. fork/exec| a6[OCI runtime]
-    a6 -->|7. exec| a7[container]
+    a1 -->|"2. fork/exec"| a3[systemd-run]
+    a3 -.->|"3. dbus"| a2
+    a2 -->|"4. (if missing) fork/exec"| a4["systemd --user<br>(user@1000.service)"]
+    a2 -->|"5. fork/exec"| a5[systemd-stdio-bridge]
+    a1 -.->|"6. dbus"| a4
+    a4 -->|7. fork/exec| a6[podman]
+    a6 -->|8. fork/exec| a7[conmon]
+    a7 -->|9. fork/exec| a8[OCI runtime]
+    a8 -->|10. exec| a9[container]
 
     classDef white fill:#fff,stroke:#333;
-    class a1,a2 white;
+    class a1,a2,a3 white;
 ```
 
 The white boxes are processes running as root and the colored boxes
 are processes running as the user _test_.
 The steps explained in more detail (here assuming _1000_ is UID for the user _test_):
 
+** experimental .... this is not a correct description of how it works.**
+
 1. __systemd-run__ requests a new transient service unit from the __systemd system manager__
    using dbus. In the request __systemd-run__ also passes the file descriptors
    for stdin, stdout, and stderr to the __systemd system manager__. To learn more about
    the technology used for passing file descriptors over a Unix socket see `SCM_RIGHTS`
    and `sendmsg()` in `man 7 unix`.
-2. The __systemd system manager__ makes sure that the __systemd user manager__ instance
+2. __systemd system manager__ starts __systemd-run__ (a second instance) with fork/exec systemd-stdio-bridge
+3. __systemd-run__ (second instance) sends a dbus request to __systemd__ requesting that systemd-stdio-bridge
+   should be started.
+4. The __systemd system manager__ makes sure that the __systemd user manager__ instance
    __user@1000.service__ is in the _active_ state. If needed, the __systemd system manager__
    will start  __user@1000.service__, which means `systemd --user` is executed.
-3. The __systemd system manager requests__ a new transient service unit from the
+5. __systemd system manager__ starts systemd-stdio-bridge running as user UID _1000_.
+6. The __systemd-run__ (first instance) requests__ a new transient service unit from the
    systemd user manager using dbus. In the request the file descriptors
    for stdin, stdout, and stderr are passed to the systemd user manager.
-4. The systemd user manager starts __podman__ with a fork/exec.
-5. __podman__ starts __conmon__ with a fork/exec.
-6. __conmon__ starts __OCI runtime__ with a fork/exec.
-7. __OCI runtime__ starts the __container__ with an exec.
-
-
-
+7. The systemd user manager starts __podman__ with a fork/exec.
+8. __podman__ starts __conmon__ with a fork/exec.
+9. __conmon__ starts __OCI runtime__ with a fork/exec.
+10. __OCI runtime__ starts the __container__ with an exec.
 
 ## Using `--property OpenFile=`
 
