@@ -112,8 +112,6 @@ The white boxes are processes running as root and the colored boxes
 are processes running as the user _test_.
 The steps explained in more detail (here assuming _1000_ is UID for the user _test_):
 
-**status experimental .... this is not a correct description of how it works.**
-
 1. __systemd-run__ requests a new transient service unit from the __systemd system manager__
    using dbus.
 2. __systemd system manager__ starts __systemd-run__ (a second instance) with fork/exec systemd-stdio-bridge
