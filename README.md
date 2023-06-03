@@ -1,6 +1,6 @@
-:warning: Experimental
+:warning: Work-in-progress, experimental
 
-status: Experimental draft. Fact-checking is needed regarding the diagrams
+status: Work-in-progress. Experimental draft. Fact-checking is needed regarding the diagrams
 and the explanation of the steps in the diagrams.
 The diagrams and the explanation of the steps were written with a bit of
 guessing of how it works.
@@ -95,13 +95,14 @@ graph TB
     a1[systemd-run] -.->|1. dbus| a2[systemd]
     a1 -->|"2. fork/exec"| a3[systemd-run]
     a3 -.->|"3. dbus"| a2
-    a2 -->|"4. (if missing) fork/exec"| a4["systemd --user<br>(user@1000.service)"]
-    a2 -->|"5. fork/exec"| a5[systemd-stdio-bridge]
-    a1 -.->|"6. dbus"| a4
-    a4 -->|7. fork/exec| a6[podman]
-    a6 -->|8. fork/exec| a7[conmon]
-    a7 -->|9. fork/exec| a8[OCI runtime]
-    a8 -->|10. exec| a9[container]
+    a2 -->|"4. fork/exec"| a5[systemd-stdio-bridge]    
+    a2 -->|"5. (if missing) fork/exec"| a4["systemd --user<br>(user@1000.service)"]
+    a5 -.->|"6. dbus"| a4
+    a1 -.->|"7. dbus"| a4
+    a4 -->|8. fork/exec| a6[podman]
+    a6 -->|9. fork/exec| a7[conmon]
+    a7 -->|10. fork/exec| a8[OCI runtime]
+    a8 -->|11. exec| a9[container]
 
     classDef white fill:#fff,stroke:#333;
     class a1,a2,a3 white;
@@ -114,24 +115,27 @@ The steps explained in more detail (here assuming _1000_ is UID for the user _te
 **status experimental .... this is not a correct description of how it works.**
 
 1. __systemd-run__ requests a new transient service unit from the __systemd system manager__
-   using dbus. In the request __systemd-run__ also passes the file descriptors
+   using dbus.
+2. __systemd system manager__ starts __systemd-run__ (a second instance) with fork/exec systemd-stdio-bridge
+3. __systemd-run__ (second instance) sends a dbus request to __systemd__ requesting that systemd-stdio-bridge
+   should be started. 
+   In the request __systemd-run__ also passes the file descriptors
    for stdin, stdout, and stderr to the __systemd system manager__. To learn more about
    the technology used for passing file descriptors over a Unix socket see `SCM_RIGHTS`
    and `sendmsg()` in `man 7 unix`.
-2. __systemd system manager__ starts __systemd-run__ (a second instance) with fork/exec systemd-stdio-bridge
-3. __systemd-run__ (second instance) sends a dbus request to __systemd__ requesting that systemd-stdio-bridge
-   should be started.
-4. The __systemd system manager__ makes sure that the __systemd user manager__ instance
+4. __systemd system manager__ starts __systemd-stdio-bridge__ running as user UID _1000_ and let the stdin, stdout, stderr
+   be the file descriptors it was passed from __step 3__.
+5. The __systemd system manager__ makes sure that the __systemd user manager__ instance
    __user@1000.service__ is in the _active_ state. If needed, the __systemd system manager__
    will start  __user@1000.service__, which means `systemd --user` is executed.
-5. __systemd system manager__ starts systemd-stdio-bridge running as user UID _1000_.
-6. The __systemd-run__ (first instance) requests__ a new transient service unit from the
+6. __systemd-stdio-bridge__ connects to __systemd user manager__ and announces its precesence.
+7. The __systemd-run__ (first instance) requests a new transient service unit from the
    systemd user manager using dbus. In the request the file descriptors
    for stdin, stdout, and stderr are passed to the systemd user manager.
-7. The systemd user manager starts __podman__ with a fork/exec.
-8. __podman__ starts __conmon__ with a fork/exec.
-9. __conmon__ starts __OCI runtime__ with a fork/exec.
-10. __OCI runtime__ starts the __container__ with an exec.
+8. The systemd user manager starts __podman__ with a fork/exec.
+9. __podman__ starts __conmon__ with a fork/exec.
+10. __conmon__ starts __OCI runtime__ with a fork/exec.
+11. __OCI runtime__ starts the __container__ with an exec.
 
 ## Using `--property OpenFile=`
 
