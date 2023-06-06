@@ -144,8 +144,8 @@ will be passed to the started service as an inherited file descriptor.
 Run the commands
 
 ```
-sudo bash -c 'echo "hello from secret" > /root/secretfile'
-sudo chmod 700 /root/secretfile
+sudo bash -c 'echo "hello from secret" > /etc/secretfile'
+sudo chmod 700 /etc/secretfile
 sudo useradd test
 uid=$(id -u test)
 sudo systemd-run \
@@ -210,8 +210,8 @@ to the regular user of the host (i.e. the user _test_).
 Run the commands
 
 ```
-sudo bash -c 'echo "hello from secret" > /root/secretfile'
-sudo chmod 700 /root/secretfile
+sudo bash -c 'echo "hello from secret" > /etc/secretfile'
+sudo chmod 700 /etc/secretfile
 sudo useradd test
 uid=$(id -u test)
 sudo systemd-run \
